@@ -8,6 +8,7 @@ from nltk.stem.snowball import FrenchStemmer, EnglishStemmer, FinnishStemmer
 from nltk.tokenize import word_tokenize
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 
+random.seed(1)
 download('stopwords')
 download('punkt')
 
