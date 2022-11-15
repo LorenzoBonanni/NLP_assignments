@@ -1,12 +1,13 @@
 import random
 
+import matplotlib.pyplot as plt
 from nltk import download
 from nltk.classify import NaiveBayesClassifier
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.stem.snowball import FrenchStemmer, EnglishStemmer, FinnishStemmer
 from nltk.tokenize import word_tokenize
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, ConfusionMatrixDisplay
 
 random.seed(1)
 download('stopwords')
@@ -38,7 +39,7 @@ list_english_no_punctuation = [word.lower() for word in filtered_list_english if
 e_stemmer = EnglishStemmer()
 list_english_stemmed = [{'token': e_stemmer.stem(word)} for word in list_english_no_punctuation]
 
-english_labels = [0] * len(list_english_stemmed)
+english_labels = [1] * len(list_english_stemmed)
 english_dataset = list(zip(list_english_stemmed, english_labels))
 
 ###############################
@@ -67,7 +68,7 @@ fr_stemmer = FrenchStemmer()
 list_french_stemmed = [{'token': fr_stemmer.stem(word)} for word in list_french_no_punctuation]
 
 non_english_tokens = list_french_stemmed + list_finnish_stemmed
-non_english_labels = [1] * len(non_english_tokens)
+non_english_labels = [0] * len(non_english_tokens)
 non_english_dataset = list(zip(non_english_tokens, non_english_labels))
 
 ################################################
@@ -91,8 +92,19 @@ classifier = NaiveBayesClassifier.train(train_set)
 #                                              #
 ################################################
 # Metrics: accuracy, precision, recall
+labels = ["ENGLISH", "NON-ENGLISH"]
 y_pred = [classifier.classify(feats) for (feats, label) in test_set]
 y_true = [label for (feats, label) in test_set]
+print("MODEL PERFORMANCE")
 print(f"ACCURACY: {accuracy_score(y_true, y_pred)}")
 print(f"PRECISION: {precision_score(y_true, y_pred)}")
 print(f"RECALL: {recall_score(y_true, y_pred)}")
+ConfusionMatrixDisplay.from_predictions(
+    y_true,
+    y_pred,
+    display_labels=labels,
+    xticks_rotation='vertical',
+    cmap='Blues'
+)
+plt.tight_layout()
+plt.savefig('img/confusion_matrix.png')
