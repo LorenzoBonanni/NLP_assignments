@@ -21,7 +21,8 @@ For measuring the performance of the classifier I've employed 3 Metrics:
 - **Accuracy:** Indicates the number of correct predictions out of the total number of predictions
 - **Precision:** Indicates what fraction of positive predictions are correct.
 - **Recall**:  indicates what fraction of all positive instances does the classifier correctly identify as positive.
+- **F1**: combines precision & recall into a single number
 
-The results are respectively 0.945, 0.95 and 0.94, those are great results, but the size of the corpus is pretty small (69.016 tokens after preprocessing) so the model might have lower performance on bigger corpora.
+The results are respectively 0.997, 0.995, 1 and 0.997 those are great results.
 
 
