@@ -1,16 +1,20 @@
 import itertools
 import random
 
-from nltk import download, WordNetLemmatizer, FreqDist
+from matplotlib import pyplot as plt
+from nltk import WordNetLemmatizer, FreqDist, NaiveBayesClassifier
 from nltk.corpus import stopwords
 from nltk.stem.snowball import SnowballStemmer
 from nltk.tokenize import word_tokenize, sent_tokenize
+from sklearn.metrics import accuracy_score, precision_score, recall_score, ConfusionMatrixDisplay, f1_score
 
 random.seed(1)
-download('stopwords')
-download('punkt')
-download('wordnet')
-download('omw-1.4')
+
+
+# download('stopwords')
+# download('punkt')
+# download('wordnet')
+# download('omw-1.4')
 
 
 ################################################
@@ -63,9 +67,26 @@ finnish_token_vec = preprocess('finnish', finnish)
 french_token_vec = preprocess('french', french)
 non_english_token_vec = french_token_vec + finnish_token_vec
 
+
 ########################
 #   COMPUTE FEATURES   #
 ########################
+def create_features(token_vector: list[str], label: int):
+    """
+    Creates the dataset transforming each phrase into an occurrence dictionary based on the most frequent word,
+    then assigning to each dictionary a label
+    :param token_vector: a list containing tokenized sentences
+    :param label: the label to assign to each data point
+    :return: the dataset
+    """
+    def vec_to_feature(phrase):
+        return {f'contains({word})': (word in set(phrase)) for word in most_common}
+
+    label_vec = [label] * len(token_vector)
+    feature_vec = [vec_to_feature(p) for p in token_vector]
+    return list(zip(feature_vec, label_vec))
+
+
 # Flatten the token vectors
 flat_english1 = list(itertools.chain(*english1_token_vec))
 flat_english2 = list(itertools.chain(*english2_token_vec))
@@ -73,13 +94,49 @@ flat_finnish = list(itertools.chain(*finnish_token_vec))
 flat_french = list(itertools.chain(*french_token_vec))
 all_tokens = flat_finnish + flat_french + flat_english1 + flat_english2
 N = 2000
-
-def document_features(phrase):
-    return {f'contains({word})': (word in set(phrase)) for word in most_common}
-
+labels = {"ENGLISH": 0, "NON-ENGLISH": 1}
+# compute most common words
 freq_dist = FreqDist(all_tokens)
-most_common = map(lambda x: x[0], freq_dist.most_common(N))
+most_common = list(freq_dist)[:N]
+# compute the dataset
+english_dataset = create_features(english_token_vec, labels["ENGLISH"])
+non_english_dataset = create_features(non_english_token_vec, labels["NON-ENGLISH"])
 
-# TODO tranform each phrase into a dictionary of features
-# TODO do train and test
-# TODO compute metrics (add F1)
+################################################
+#                                              #
+#                   CLASSIFY                   #
+#                                              #
+################################################
+complete_dataset = english_dataset + non_english_dataset
+random.shuffle(complete_dataset)
+
+# Split Train and Test Set 70% Training and 30% for Test
+train_split = int(0.7 * len(complete_dataset))
+train_set, test_set = complete_dataset[:train_split], complete_dataset[train_split:]
+
+print("TRAINING")
+classifier = NaiveBayesClassifier.train(train_set)
+
+################################################
+#                                              #
+#                   METRICS                    #
+#                                              #
+################################################
+# Metrics: accuracy, precision, recall, f1
+print("TESTING")
+y_pred = [classifier.classify(feats) for (feats, label) in test_set]
+y_true = [label for (feats, label) in test_set]
+print("MODEL PERFORMANCE")
+print(f"ACCURACY: {accuracy_score(y_true, y_pred)}")
+print(f"PRECISION: {precision_score(y_true, y_pred)}")
+print(f"RECALL: {recall_score(y_true, y_pred)}")
+print(f"F1: {f1_score(y_true, y_pred)}")
+ConfusionMatrixDisplay.from_predictions(
+    y_true,
+    y_pred,
+    display_labels=list(labels.keys()),
+    xticks_rotation='vertical',
+    cmap='Blues'
+)
+plt.tight_layout()
+plt.savefig('img/confusion_matrix.png')
