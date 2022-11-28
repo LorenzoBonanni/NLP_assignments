@@ -71,7 +71,7 @@ non_english_token_vec = french_token_vec + finnish_token_vec
 ########################
 #   COMPUTE FEATURES   #
 ########################
-def create_features(token_vector: list[str], label: int):
+def create_features(token_vector: list[list[str]], label: int):
     """
     Creates the dataset transforming each phrase into an occurrence dictionary based on the most frequent word,
     then assigning to each dictionary a label
@@ -79,26 +79,14 @@ def create_features(token_vector: list[str], label: int):
     :param label: the label to assign to each data point
     :return: the dataset
     """
-    def vec_to_feature(phrase):
-        return {f'contains({word})': (word in set(phrase)) for word in most_common}
 
     label_vec = [label] * len(token_vector)
-    feature_vec = [vec_to_feature(p) for p in token_vector]
+    feature_vec = [{f'token_{i}': token for i, token in enumerate(p)} for p in token_vector]
     return list(zip(feature_vec, label_vec))
 
 
-# Flatten the token vectors
-flat_english1 = list(itertools.chain(*english1_token_vec))
-flat_english2 = list(itertools.chain(*english2_token_vec))
-flat_finnish = list(itertools.chain(*finnish_token_vec))
-flat_french = list(itertools.chain(*french_token_vec))
-all_tokens = flat_finnish + flat_french + flat_english1 + flat_english2
-N = 2000
-labels = {"ENGLISH": 0, "NON-ENGLISH": 1}
-# compute most common words
-freq_dist = FreqDist(all_tokens)
-most_common = list(freq_dist)[:N]
 # compute the dataset
+labels = {"ENGLISH": 0, "NON-ENGLISH": 1}
 english_dataset = create_features(english_token_vec, labels["ENGLISH"])
 non_english_dataset = create_features(non_english_token_vec, labels["NON-ENGLISH"])
 
@@ -126,10 +114,10 @@ print("TESTING")
 y_pred = [classifier.classify(feats) for (feats, label) in test_set]
 y_true = [label for (feats, label) in test_set]
 print("MODEL PERFORMANCE")
-print(f"ACCURACY: {accuracy_score(y_true, y_pred)}")
-print(f"PRECISION: {precision_score(y_true, y_pred)}")
-print(f"RECALL: {recall_score(y_true, y_pred)}")
-print(f"F1: {f1_score(y_true, y_pred)}")
+print(f"ACCURACY: {round(accuracy_score(y_true, y_pred), 3)}")
+print(f"PRECISION: {round(precision_score(y_true, y_pred), 3)}")
+print(f"RECALL: {round(recall_score(y_true, y_pred), 3)}")
+print(f"F1: {round(f1_score(y_true, y_pred), 3)}")
 ConfusionMatrixDisplay.from_predictions(
     y_true,
     y_pred,
